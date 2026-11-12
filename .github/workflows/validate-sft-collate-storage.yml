@@ -14,8 +14,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 990bc656cb0d08137ecfdc3f85d7f4ec03804aa0
-          fetch-depth: 2
+          ref: 1e261959b916df0bdd16bb1c408b548dee58adec
+          fetch-depth: 3
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -26,7 +26,7 @@ jobs:
           python -m pip freeze > installed-dependencies.txt
       - name: Verify exact source and native regression tests
         run: |
-          test "$(git rev-parse HEAD)" = "990bc656cb0d08137ecfdc3f85d7f4ec03804aa0"
+          test "$(git rev-parse HEAD)" = "1e261959b916df0bdd16bb1c408b548dee58adec"
           python -m ruff check litgpt/data/base.py tests/data/test_collate_bounded_storage.py
           python -m ruff format --check litgpt/data/base.py tests/data/test_collate_bounded_storage.py
           python -m pytest tests/data/test_collate_bounded_storage.py tests/data/test_base.py -q --junitxml=patched.xml
