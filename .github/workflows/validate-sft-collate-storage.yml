@@ -57,6 +57,27 @@ jobs:
         run: |
           git show 5341568a65e918a85cb284fac038de2157eebf3f:litgpt/data/base.py > litgpt/data/base.py
           python - <<'PY'
+          import json
+          import torch
+          from litgpt.data.base import get_sft_collate_fn
+          
+          samples = []
+          for length in (65536, 32768, 8192):
+              ids = torch.arange(length, dtype=torch.long) % 32
+              samples.append({"input_ids": ids, "labels": ids.clone(), "token_counts": {"raw": length, "raw_plus_prompt_template": length}})
+          with torch.profiler.profile(activities=[torch.profiler.ProfilerActivity.CPU], profile_memory=True) as prof:
+              batch = get_sft_collate_fn(max_seq_length=128)(samples)
+          result = {
+              "torch": torch.__version__,
+              "shapes": {key: list(batch[key].shape) for key in ("input_ids", "labels")},
+              "logical_bytes": {key: batch[key].numel() * batch[key].element_size() for key in ("input_ids", "labels")},
+              "storage_bytes": {key: batch[key].untyped_storage().nbytes() for key in ("input_ids", "labels")},
+              "largest_profiled_cpu_allocation_bytes": max(event.cpu_memory_usage for event in prof.events()),
+          }
+          print(json.dumps(result, indent=2), flush=True)
+          assert all(result["storage_bytes"][key] > result["logical_bytes"][key] * 100 for key in ("input_ids", "labels"))
+          PY
+          python - <<'PY'
           import subprocess
           import sys
           import xml.etree.ElementTree as ET
